@@ -1,44 +1,31 @@
-node.js
-
 const http = require('http');
-const fetch = require('node-fetch');
 
 const server = http.createServer(async (req, res) => {
-  const url = req.url;
-  const method = req.method;
+  const [, route, currency = 'usd'] = req.url.split('/');
 
-  if (url === '/stock-insight' && method === 'GET') {
-    const currency = new URLSearchParams(url.split('?')[1]).get('currency') || 'usd';
+  if (route !== 'stock-insight' || req.method !== 'GET') {
+    res.writeHead(404).end(JSON.stringify({ error: "Rota inválida. Use /stock-insight/brl ou /stock-insight/usd" }));
+    return;
+  }
 
-    try {
-      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl,usd');
-      const data = await response.json();
-      const price = data.bitcoin[currency];
+  if (!['brl', 'usd'].includes(currency)) {
+    res.writeHead(400).end(JSON.stringify({ error: "Moeda inválida! Use 'brl' ou 'usd'." }));
+    return;
+  }
 
-      let suggestion = '';
-      if (currency === 'brl') {
-        if (price < 300000) suggestion = "Bom momento para compra!";
-        else if (price <= 450000) suggestion = "Preço razoável. Avalie antes de comprar.";
-        else suggestion = "Bitcoin está caro. Pode ser melhor esperar.";
-      } else {
-        if (price < 60000) suggestion = "Bom momento para compra!";
-        else if (price <= 80000) suggestion = "Preço razoável. Avalie antes de comprar.";
-        else suggestion = "Bitcoin está caro. Pode ser melhor esperar.";
-      }
+  try {
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl,usd');
+    if (!response.ok) throw new Error();
 
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ btc_price: price, currency, suggestion }));
-    } catch (error) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Erro ao consultar API do CoinGecko' }));
-    }
-  } else {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: "Not Found" }));
+    const price = (await response.json()).bitcoin[currency];
+    const suggestion = price < (currency === 'brl' ? 300000 : 60000) ? "Ótima hora para comprar!" :
+                       price <= (currency === 'brl' ? 450000 : 80000) ? "Preço razoável, vale pensar." :
+                       "Bitcoin está caro, talvez seja melhor esperar.";
+
+    res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ btc_price: price, currency, suggestion }));
+  } catch {
+    res.writeHead(500).end(JSON.stringify({ error: "Erro ao obter o preço do Bitcoin." }));
   }
 });
 
-server.listen(3000, () => {
-  console.log('Server running at http://localhost:3000/');
-});
-
+server.listen(3000, () => console.log('Servidor rodando em: http://localhost:3000/stock-insight/usd'));

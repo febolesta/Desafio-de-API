@@ -16,28 +16,27 @@ const server = http.createServer(async (req, res) => {
 
       let suggestion = '';
       if (currency === 'brl') {
-        if (price < 300000) suggestion = "Bom momento para compra!";
-        else if (price <= 450000) suggestion = "Preço razoável. Avalie antes de comprar.";
+        if (price < 300000) suggestion = "Agora é uma boa oportunidade para comprar!";
+        else if (price <= 450000) suggestion = "Preço razoável, vale pensar antes de comprar.";
         else suggestion = "Bitcoin está caro. Pode ser melhor esperar.";
       } else {
-        if (price < 60000) suggestion = "Bom momento para compra!";
-        else if (price <= 80000) suggestion = "Preço razoável. Avalie antes de comprar.";
-        else suggestion = "Bitcoin está caro. Pode ser melhor esperar.";
+        if (price < 60000) suggestion = "Boa oportunidade para comprar!";
+        else if (price <= 80000) suggestion = "Preço razoável, vale considerar.";
+        else suggestion = "Bitcoin está caro. Talvez seja melhor esperar.";
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ btc_price: price, currency, suggestion }));
     } catch (error) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Erro ao consultar API do CoinGecko' }));
+      res.end(JSON.stringify({ error: 'Não conseguimos obter o preço do Bitcoin. Tente mais tarde.' }));
     }
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: "Not Found" }));
+    res.end(JSON.stringify({ error: "Rota não encontrada. Tente acessar /stock-insight?currency=brl ou /stock-insight?currency=usd" }));
   }
 });
 
 server.listen(3000, () => {
-  console.log('Server running at http://localhost:3000/');
+  console.log('Servidor rodando em http://localhost:3000/');
 });
-```
